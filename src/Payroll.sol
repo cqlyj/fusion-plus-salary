@@ -70,6 +70,7 @@ contract Payroll is Ownable {
     error Payroll__MismatchedLength();
     error Payroll__NotDueYet();
     error Payroll__InsufficientFunds();
+    error Payroll__InvalidEmployeeId();
 
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
@@ -96,6 +97,7 @@ contract Payroll is Ownable {
         uint256 lastPaymentDate,
         uint256 interval
     ) external onlyOwner {
+        _validEmployeeId(employeeId);
         s_idToPayment[employeeId] = Payment(
             employeeId,
             connectedWallet,
@@ -198,6 +200,13 @@ contract Payroll is Ownable {
         }
         if (sum > PERCENTAGE) {
             revert Payroll__InvalidSumOfPercentages();
+        }
+    }
+
+    function _validEmployeeId(uint256 employeeId) internal view {
+        // This is to prevent overwriting an existing employee
+        if (s_idToPayment[employeeId].employeeId != 0) {
+            revert Payroll__InvalidEmployeeId();
         }
     }
 
