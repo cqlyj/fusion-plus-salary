@@ -7,13 +7,14 @@ import {Payroll} from "src/Payroll.sol";
 contract DeployPayroll is Script {
     address linkAddress = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
     address[] allowedTokens = [linkAddress];
+    uint256[] allowedChainIds = [137, 1];
     Payroll payroll;
 
     function run() external {
         // Deploy to the mainnet fork
         vm.startBroadcast();
 
-        payroll = new Payroll(allowedTokens);
+        payroll = new Payroll(allowedTokens, allowedChainIds);
 
         vm.stopBroadcast();
 
