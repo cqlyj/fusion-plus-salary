@@ -10,6 +10,8 @@ contract PayrollTest is Test {
     uint256 public fork;
     // Link token address on mainnet
     address constant LINK_ADDRESS = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
+    uint256 constant POLYGON_CHAIN_ID = 137;
+    uint256 constant MAINNET_CHAIN_ID = 1;
     address constant DEFAULT_ANVIL_ADDRESS =
         0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
     address EMPLOYEE_ADDRESS = makeAddr("employee");
@@ -21,8 +23,11 @@ contract PayrollTest is Test {
 
         address[] memory allowedTokens = new address[](1);
         allowedTokens[0] = LINK_ADDRESS;
+        uint256[] memory allowedChainIds = new uint256[](2);
+        allowedChainIds[0] = POLYGON_CHAIN_ID;
+        allowedChainIds[1] = MAINNET_CHAIN_ID;
         vm.prank(DEFAULT_ANVIL_ADDRESS);
-        payroll = new Payroll(allowedTokens);
+        payroll = new Payroll(allowedTokens, allowedChainIds);
 
         deal(LINK_ADDRESS, DEFAULT_ANVIL_ADDRESS, 1e18);
         deal(payroll.getUsdcContract(), DEFAULT_ANVIL_ADDRESS, 1e18);
@@ -55,7 +60,7 @@ contract PayrollTest is Test {
         console.log("Warping 1 day - pass the interval");
 
         vm.startPrank(EMPLOYEE_ADDRESS);
-        payroll.claimPayroll(1);
+        payroll.claimPayroll(1, 1);
         vm.stopPrank();
         console.log("The payroll has been claimed");
     }
