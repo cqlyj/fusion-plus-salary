@@ -52,7 +52,7 @@ contract PayrollTest is Test {
         tokens[0] = LINK_ADDRESS;
         uint256[] memory percentages = new uint256[](1);
         percentages[0] = 50; // half usdc, half link
-        payroll.setTokenPreferences(1, tokens, percentages);
+        payroll.setPreferences(1, POLYGON_CHAIN_ID, tokens, percentages);
         vm.stopPrank();
         console.log("The token preferences set");
 
@@ -60,7 +60,7 @@ contract PayrollTest is Test {
         console.log("Warping 1 day - pass the interval");
 
         vm.startPrank(EMPLOYEE_ADDRESS);
-        payroll.claimPayroll(1, 1);
+        payroll.claimPayroll(1);
         vm.stopPrank();
         console.log("The payroll has been claimed");
     }
