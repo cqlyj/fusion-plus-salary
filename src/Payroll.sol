@@ -17,7 +17,8 @@ contract Payroll is Ownable {
         uint256 interval;
     }
 
-    struct TokenPreference {
+    struct Preference {
+        uint256 destChainId;
         address[] tokens;
         uint256[] percentages;
     }
@@ -31,8 +32,7 @@ contract Payroll is Ownable {
     IERC20 private immutable i_usdc =
         IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48); // Mainnet USDC with 6 decimals
     mapping(uint256 employeeId => Payment) private s_idToPayment;
-    mapping(uint256 employeeId => TokenPreference)
-        private s_idToTokenPreference;
+    mapping(uint256 employeeId => Preference) private s_idToPreference;
     uint256 private constant PERCENTAGE = 100;
 
     /*//////////////////////////////////////////////////////////////
@@ -45,8 +45,9 @@ contract Payroll is Ownable {
         uint256 salaryAmount
     );
 
-    event TokenPreferencesSet(
+    event PreferencesSet(
         uint256 indexed employeeId,
+        uint256 destChainId,
         address[] tokens,
         uint256[] percentages
     );
@@ -101,6 +102,8 @@ contract Payroll is Ownable {
 
     function depositFunds(uint256 amountOfUsdc) external payable onlyOwner {
         i_usdc.transferFrom(msg.sender, address(this), amountOfUsdc);
+        // approve the contract to spend the USDC
+        i_usdc.approve(address(this), amountOfUsdc);
 
         emit DepositFunds(amountOfUsdc);
     }
@@ -120,6 +123,11 @@ contract Payroll is Ownable {
             lastPaymentDate,
             interval
         );
+        s_idToPreference[employeeId] = Preference(
+            block.chainid, // default to the original chain => same chain where this contract is deployed
+            new address[](0),
+            new uint256[](0)
+        );
 
         emit EmployeeAdded(employeeId, connectedWallet, salaryAmount);
     }
@@ -133,8 +141,9 @@ contract Payroll is Ownable {
                            EMPLOYEE FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function setTokenPreferences(
+    function setPreferences(
         uint256 employeeId,
+        uint256 destChainId,
         address[] calldata tokens,
         uint256[] calldata percentages
     ) external {
@@ -150,17 +159,20 @@ contract Payroll is Ownable {
         // here the usdc is not included in the tokens array
         _checkTokens(tokens);
         _checkPercentage(percentages);
+        _checkChainId(destChainId);
 
-        s_idToTokenPreference[employeeId] = TokenPreference(
+        s_idToPreference[employeeId] = Preference(
+            destChainId,
             tokens,
             percentages
         );
 
-        emit TokenPreferencesSet(employeeId, tokens, percentages);
+        emit PreferencesSet(employeeId, destChainId, tokens, percentages);
     }
 
-    function claimPayroll(uint256 employeeId, uint256 chainId) external {
+    function claimPayroll(uint256 employeeId) external {
         // chainId can be either the original chain or the chain where the employee wants to have the payroll
+        uint256 chainId = s_idToPreference[employeeId].destChainId;
         _checkChainId(chainId);
 
         Payment storage payment = s_idToPayment[employeeId];
@@ -183,9 +195,8 @@ contract Payroll is Ownable {
         // This way they can still claim their payroll for the last month
         payment.lastPaymentDate = payment.lastPaymentDate + payment.interval;
 
-        address[] memory tokens = s_idToTokenPreference[employeeId].tokens;
-        uint256[] memory percentages = s_idToTokenPreference[employeeId]
-            .percentages;
+        address[] memory tokens = s_idToPreference[employeeId].tokens;
+        uint256[] memory percentages = s_idToPreference[employeeId].percentages;
 
         uint256 usdcAmount = _calculateUsdcTransfer(amount, percentages);
 
@@ -306,10 +317,10 @@ contract Payroll is Ownable {
         return s_idToPayment[employeeId];
     }
 
-    function getTokenPreference(
+    function getPreference(
         uint256 employeeId
-    ) external view returns (TokenPreference memory) {
-        return s_idToTokenPreference[employeeId];
+    ) external view returns (Preference memory) {
+        return s_idToPreference[employeeId];
     }
 
     function getUsdcBalance() external view returns (uint256) {
