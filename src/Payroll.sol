@@ -27,6 +27,7 @@ contract Payroll is Ownable {
     //////////////////////////////////////////////////////////////*/
 
     address[] private s_allowedTokens;
+    uint256[] private s_allowedChainIds;
     IERC20 private immutable i_usdc =
         IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48); // Mainnet USDC with 6 decimals
     mapping(uint256 employeeId => Payment) private s_idToPayment;
@@ -52,13 +53,22 @@ contract Payroll is Ownable {
 
     event DepositFunds(uint256 amountOfUsdc);
 
-    event PayrollClaimed(
+    event Withdraw(uint256 amountOfUsdc);
+
+    event SameChainPayrollClaimed(
         uint256 indexed employeeId,
         address indexed connectedWallet,
-        uint256 amount
+        address[] tokens,
+        uint256[] percentages
     );
 
-    event Withdraw(uint256 amountOfUsdc);
+    event CrossChainPayrollClaimed(
+        uint256 indexed employeeId,
+        address indexed connectedWallet,
+        address[] tokens,
+        uint256[] percentages,
+        uint256 chainId
+    );
 
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
@@ -71,13 +81,18 @@ contract Payroll is Ownable {
     error Payroll__NotDueYet();
     error Payroll__InsufficientFunds();
     error Payroll__InvalidEmployeeId();
+    error Payroll__NotAllowedChain();
 
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address[] memory allowedTokens) Ownable(msg.sender) {
+    constructor(
+        address[] memory allowedTokens,
+        uint256[] memory allowedChainIds
+    ) Ownable(msg.sender) {
         s_allowedTokens = allowedTokens;
+        s_allowedChainIds = allowedChainIds;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -144,7 +159,10 @@ contract Payroll is Ownable {
         emit TokenPreferencesSet(employeeId, tokens, percentages);
     }
 
-    function claimPayroll(uint256 employeeId) external {
+    function claimPayroll(uint256 employeeId, uint256 chainId) external {
+        // chainId can be either the original chain or the chain where the employee wants to have the payroll
+        _checkChainId(chainId);
+
         Payment storage payment = s_idToPayment[employeeId];
 
         if (payment.connectedWallet != msg.sender) {
@@ -165,15 +183,65 @@ contract Payroll is Ownable {
         // This way they can still claim their payroll for the last month
         payment.lastPaymentDate = payment.lastPaymentDate + payment.interval;
 
-        // @update This will be updated to use the token preferences
-        i_usdc.transfer(msg.sender, amount);
+        address[] memory tokens = s_idToTokenPreference[employeeId].tokens;
+        uint256[] memory percentages = s_idToTokenPreference[employeeId]
+            .percentages;
 
-        emit PayrollClaimed(employeeId, msg.sender, amount);
+        uint256 usdcAmount = _calculateUsdcTransfer(amount, percentages);
+
+        // @update This will be updated to use the token preferences
+        if (chainId == block.chainid) {
+            // if the chainId is the same as the current chainId
+            // make the same chain transfer and use fusion or perhaps hyperLane and Uniswap for the swap
+            if (usdcAmount > 0) {
+                i_usdc.transfer(msg.sender, usdcAmount);
+            }
+
+            // same chain token swap
+
+            emit SameChainPayrollClaimed(
+                employeeId,
+                msg.sender,
+                tokens,
+                percentages
+            );
+        } else {
+            // if the chainId is different from the current chainId
+            // use fusion+ to swap
+            // and as for the usdc transfer, consider using the Circle cross-chain USDC transfer
+            if (usdcAmount > 0) {
+                // Circle usdc transfer
+            }
+
+            // cross-chain token swap fusion+
+
+            emit CrossChainPayrollClaimed(
+                employeeId,
+                msg.sender,
+                tokens,
+                percentages,
+                chainId
+            );
+        }
     }
 
     /*//////////////////////////////////////////////////////////////
                             HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    function _calculateUsdcTransfer(
+        uint256 amount,
+        uint256[] memory percentages
+    ) internal pure returns (uint256) {
+        uint256 length = percentages.length;
+        uint256 usdcAmount;
+        uint256 usdcPercentage;
+        for (uint256 i = 0; i < length; i++) {
+            usdcPercentage = PERCENTAGE - percentages[i];
+        }
+        usdcAmount = (amount * usdcPercentage) / PERCENTAGE;
+        return usdcAmount;
+    }
 
     function _checkTokens(address[] calldata tokens) internal view {
         uint256 length = tokens.length;
@@ -207,6 +275,20 @@ contract Payroll is Ownable {
         // This is to prevent overwriting an existing employee
         if (s_idToPayment[employeeId].employeeId != 0) {
             revert Payroll__InvalidEmployeeId();
+        }
+    }
+
+    function _checkChainId(uint256 chainId) internal view {
+        uint256 length = s_allowedChainIds.length;
+        bool found = false;
+        for (uint256 i = 0; i < length; i++) {
+            if (chainId == s_allowedChainIds[i]) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            revert Payroll__NotAllowedChain();
         }
     }
 
