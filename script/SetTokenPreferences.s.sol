@@ -16,8 +16,9 @@ contract SetTokenPreferences is Script {
         percentages[0] = 50;
 
         vm.startBroadcast();
-        Payroll(mostRecentlyDeployment).setTokenPreferences(
+        Payroll(mostRecentlyDeployment).setPreferences(
             1,
+            137, // set preferences for Polygon
             tokens,
             percentages
         );
