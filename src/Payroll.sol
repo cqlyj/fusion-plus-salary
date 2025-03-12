@@ -33,6 +33,8 @@ contract Payroll is Ownable {
         IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48); // Mainnet USDC with 6 decimals
     mapping(uint256 employeeId => Payment) private s_idToPayment;
     mapping(uint256 employeeId => Preference) private s_idToPreference;
+    mapping(address connectedWallet => uint256 employeeId)
+        private s_walletToEmployeeId;
     uint256 private constant PERCENTAGE = 100;
 
     /*//////////////////////////////////////////////////////////////
@@ -128,6 +130,7 @@ contract Payroll is Ownable {
             new address[](0),
             new uint256[](0)
         );
+        s_walletToEmployeeId[connectedWallet] = employeeId;
 
         emit EmployeeAdded(employeeId, connectedWallet, salaryAmount);
     }
@@ -333,5 +336,14 @@ contract Payroll is Ownable {
 
     function getOwner() external view returns (address) {
         return owner();
+    }
+
+    // We can use this to get the employeeId of the connectedWallet
+    // Then retrieve the employee's payment and preference
+    // This is useful for fusion+ to get the quote for the swap
+    function getEmployeeId(
+        address connectedWallet
+    ) external view returns (uint256) {
+        return s_walletToEmployeeId[connectedWallet];
     }
 }
