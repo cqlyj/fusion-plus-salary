@@ -198,42 +198,31 @@ contract Payroll is Ownable {
         // This way they can still claim their payroll for the last month
         payment.lastPaymentDate = payment.lastPaymentDate + payment.interval;
 
-        address[] memory tokens = s_idToPreference[employeeId].tokens;
-        uint256[] memory percentages = s_idToPreference[employeeId].percentages;
+        // transfer the USDC to the employee first
+        i_usdc.transfer(msg.sender, amount);
 
-        uint256 usdcAmount = _calculateUsdcTransfer(amount, percentages);
-
-        // @update This will be updated to use the token preferences
+        // we will based on the event to determine what kind of swaps will be done in the backend
         if (chainId == block.chainid) {
             // if the chainId is the same as the current chainId
             // make the same chain transfer and use fusion or perhaps hyperLane and Uniswap for the swap
-            if (usdcAmount > 0) {
-                i_usdc.transfer(msg.sender, usdcAmount);
-            }
 
             // same chain token swap
-
             emit SameChainPayrollClaimed(
                 employeeId,
                 msg.sender,
-                tokens,
-                percentages
+                s_idToPreference[employeeId].tokens,
+                s_idToPreference[employeeId].percentages
             );
         } else {
             // if the chainId is different from the current chainId
             // use fusion+ to swap
-            // and as for the usdc transfer, consider using the Circle cross-chain USDC transfer
-            if (usdcAmount > 0) {
-                // Circle usdc transfer
-            }
 
             // cross-chain token swap fusion+
-
             emit CrossChainPayrollClaimed(
                 employeeId,
                 msg.sender,
-                tokens,
-                percentages,
+                s_idToPreference[employeeId].tokens,
+                s_idToPreference[employeeId].percentages,
                 chainId
             );
         }
@@ -242,20 +231,6 @@ contract Payroll is Ownable {
     /*//////////////////////////////////////////////////////////////
                             HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
-    function _calculateUsdcTransfer(
-        uint256 amount,
-        uint256[] memory percentages
-    ) internal pure returns (uint256) {
-        uint256 length = percentages.length;
-        uint256 usdcAmount;
-        uint256 usdcPercentage;
-        for (uint256 i = 0; i < length; i++) {
-            usdcPercentage = PERCENTAGE - percentages[i];
-        }
-        usdcAmount = (amount * usdcPercentage) / PERCENTAGE;
-        return usdcAmount;
-    }
 
     function _checkTokens(address[] calldata tokens) internal view {
         uint256 length = tokens.length;
