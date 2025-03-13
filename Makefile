@@ -15,8 +15,8 @@ deposit-funds:
 add-employee:
 	@forge script script/AddEmployee.s.sol:AddEmployee --rpc-url $(ANVIL_RPC_URL) --account default --sender $(DEFAULT_USER) --broadcast -vvvv
 
-set-token-preferences:
-	@forge script script/SetTokenPreferences.s.sol:SetTokenPreferences --rpc-url $(ANVIL_RPC_URL) --private-key $(SECOND_USER_PRIVATE_KEY) --broadcast -vvvv
+set-preferences:
+	@forge script script/SetPreferences.s.sol:SetPreferences --rpc-url $(ANVIL_RPC_URL) --private-key $(SECOND_USER_PRIVATE_KEY) --broadcast -vvvv
 
 balanceOf-link-unlucky:
 	@cast call $(MAINNET_LINK_ADDRESS) "balanceOf(address)(uint256)" $(UNLUCKY_USER_LINK) 0
