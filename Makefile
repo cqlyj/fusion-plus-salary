@@ -18,6 +18,9 @@ add-employee:
 set-preferences:
 	@forge script script/SetPreferences.s.sol:SetPreferences --rpc-url $(ANVIL_RPC_URL) --private-key $(SECOND_USER_PRIVATE_KEY) --broadcast -vvvv
 
+claim-payroll:
+	@forge script script/ClaimPayroll.s.sol:ClaimPayroll --rpc-url $(ANVIL_RPC_URL) --private-key $(SECOND_USER_PRIVATE_KEY) --broadcast -vvvv
+
 balanceOf-link-unlucky:
 	@cast call $(MAINNET_LINK_ADDRESS) "balanceOf(address)(uint256)" $(UNLUCKY_USER_LINK) 0
 
