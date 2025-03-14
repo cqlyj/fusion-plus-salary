@@ -7,3 +7,6 @@
 [submodule "lib/cross-chain-swap"]
 	path = lib/cross-chain-swap
 	url = https://github.com/1inch/cross-chain-swap
+[submodule "lib/limit-order-protocol"]
+	path = lib/limit-order-protocol
+	url = https://github.com/1inch/limit-order-protocol
