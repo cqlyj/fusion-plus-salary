@@ -38,6 +38,9 @@ set-preferences:
 claim-payroll:
 	@forge script script/ClaimPayroll.s.sol:ClaimPayroll --rpc-url $(ANVIL_RPC_URL_SRC) --private-key $(SECOND_USER_PRIVATE_KEY) --broadcast -vvvv
 
+deploy-src:
+	@forge script script/1inch/DeploySrc.s.sol:DeploySrc --rpc-url $(ANVIL_RPC_URL_SRC) --account default --sender $(DEFAULT_USER) --broadcast -vvvv
+
 ############################################################################################
 #                                      Simulations										   #
 ############################################################################################
