@@ -21,6 +21,8 @@ contract MockResolver is Ownable {
 
     constructor() Ownable(msg.sender) {}
 
+    receive() external payable {}
+
     /**
      * @notice Deploys a new escrow contract for maker on the source chain.
      * @param immutables The immutables of the escrow contract that are used in deployment.
@@ -60,19 +62,19 @@ contract MockResolver is Ownable {
         i_order.fillOrderArgs(order, r, vs, amount, takerTraits, argsMem);
     }
 
-    /**
-     * @notice Same as `fillOrder` but allows to specify arguments that are used by the taker.
-     * @param order Order quote to fill
-     * @param r R component of signature
-     * @param vs VS component of signature
-     * @param amount Taker amount to fill
-     * @param takerTraits Specifies threshold as maximum allowed takingAmount when takingAmount is zero, otherwise specifies
-     * minimum allowed makingAmount. The 2nd (0 based index) highest bit specifies whether taker wants to skip maker's permit.
-     * @param args Arguments that are used by the taker (target, extension, interaction, permit)
-     * @return makingAmount Actual amount transferred from maker to taker
-     * @return takingAmount Actual amount transferred from taker to maker
-     * @return orderHash Hash of the filled order
-     */
+    // /**
+    //  * @notice Same as `fillOrder` but allows to specify arguments that are used by the taker.
+    //  * @param order Order quote to fill
+    //  * @param r R component of signature
+    //  * @param vs VS component of signature
+    //  * @param amount Taker amount to fill
+    //  * @param takerTraits Specifies threshold as maximum allowed takingAmount when takingAmount is zero, otherwise specifies
+    //  * minimum allowed makingAmount. The 2nd (0 based index) highest bit specifies whether taker wants to skip maker's permit.
+    //  * @param args Arguments that are used by the taker (target, extension, interaction, permit)
+    //  * @return makingAmount Actual amount transferred from maker to taker
+    //  * @return takingAmount Actual amount transferred from taker to maker
+    //  * @return orderHash Hash of the filled order
+    //  */
     // function fillOrderArgs(
     //     IOrderMixin.Order calldata order,
     //     bytes32 r,
