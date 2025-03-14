@@ -1,7 +1,7 @@
 -include .env
 
 install:
-	@forge install OpenZeppelin/openzeppelin-contracts --no-commit
+	@forge install OpenZeppelin/openzeppelin-contracts --no-commit && forge install 1inch/cross-chain-swap --no-commit && forge install 1inch/limit-order-protocol --no-commit
 
 anvil:
 	@anvil --fork-url $(MAINNET_RPC_URL) 
