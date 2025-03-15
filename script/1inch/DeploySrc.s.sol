@@ -14,9 +14,9 @@ import {TakerTraits} from "limit-order-protocol/libraries/TakerTraitsLib.sol";
 contract DeploySrc is Script {
     // those values are retrieved from the fusion+ api
     bytes32 orderHash =
-        0x883ad3b7a6e9eef6e6ccbd63811f442d3b779c053d9f255ca9cc49fd87ff8c5d;
+        0x4bfbdb2ed9f9c7e2d6f6d576c9447f2e299fddc26e14c431cbaf3e024421689c;
     bytes32 hashlock =
-        0xef5c09a4f9dcde49e76b64009f2cfe02c308f0993f271332d1f9671d1c7af061;
+        0xdb0fd1131f1b9e113177c2ca77141042c5e0c1da655bb89acae9a78de0f952d1;
     Address maker =
         Address.wrap(uint160(0x70997970C51812dc3A010C7d01b50e0d17dc79C8)); // for demo purpose we know the maker will be the second Anvil address
     Address taker =
@@ -42,15 +42,15 @@ contract DeploySrc is Script {
 
     IOrderMixin.Order order =
         IOrderMixin.Order(
-            9445680536330710674639214029314565537344982747492504666726427626089400168223, // salt
+            9445680547397336521814649437822316726196018837947820098446270030205675929919, // salt
             maker,
             Address.wrap(uint160(0x0000000000000000000000000000000000000000)),
             token,
             Address.wrap(uint160(0xDA0000d4000015A526378bB6faFc650Cea5966F8)), // LINK on Polygon
             amount,
-            68950246988963384606,
+            71072973539492589420,
             MakerTraits.wrap(
-                62419173104490761595518734106935966576586521882755260756559723990326907502592
+                62419173104490761595518734106839027476313006583650176683635734654290568937472
             )
         );
 
@@ -67,6 +67,30 @@ contract DeploySrc is Script {
 
     function deploySrc(address payable mostRecentlyDeployment) public {
         (bytes32 r, bytes32 vs) = makeSignature();
+        InteractionParams memory interaction = InteractionParams(
+            bytes("0x"),
+            bytes("0x"),
+            bytes(
+                "0xa7bcb4eac8964306f9e3764f67db6a7af6ddf99a000eed0000021d67d522b70000b400d34c00b2f20078000eed003c"
+            ),
+            bytes(
+                "0xa7bcb4eac8964306f9e3764f67db6a7af6ddf99a000eed0000021d67d522b70000b400d34c00b2f20078000eed003c"
+            ),
+            bytes("0x"),
+            bytes("0x"),
+            bytes("0x"),
+            bytes(
+                "0xa7bcb4eac8964306f9e3764f67db6a7af6ddf99a67d5229f72f8a0c8c415454f629c000008db0fd1131f1b9e113177c2ca77141042c5e0c1da655bb89acae9a78de0f952d1000000000000000000000000000000000000000000000000000000000000008900000000000000000000000053e0bca35ec356bd5dddfebbd1fc0fd03fabad3900000000000000000000692cdb3ff7c000000000000000000087bc791374e0700000000000000240000001c8000000b40000030000000288000001ec00000024"
+            )
+        );
+
+        bytes memory extension = buildExtension(interaction);
+
+        bytes memory args = buildArgs(
+            abi.encode(interaction),
+            extension,
+            0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+        );
 
         vm.startBroadcast();
         MockResolver(mostRecentlyDeployment).deploySrc(
@@ -76,8 +100,7 @@ contract DeploySrc is Script {
             vs,
             amount,
             takerTraits,
-            bytes("") // custom error 0xb2d25e49 => MissingOrderExtension
-            // TODO: fix this
+            args // custom error 0xb2d25e49 => MissingOrderExtension
         );
         vm.stopBroadcast();
 
@@ -94,5 +117,75 @@ contract DeploySrc is Script {
         vm.deal(address(mockResolver), 1e18);
 
         deploySrc(payable(mockResolver));
+    }
+
+    struct InteractionParams {
+        bytes makerAssetSuffix;
+        bytes takerAssetSuffix;
+        bytes makingAmountData;
+        bytes takingAmountData;
+        bytes predicate;
+        bytes permit;
+        bytes preInteraction;
+        bytes postInteraction;
+    }
+
+    function buildExtension(
+        InteractionParams memory interactions
+    ) public pure returns (bytes memory) {
+        bytes[8] memory allInteractions = [
+            interactions.makerAssetSuffix,
+            interactions.takerAssetSuffix,
+            interactions.makingAmountData,
+            interactions.takingAmountData,
+            interactions.predicate,
+            interactions.permit,
+            interactions.preInteraction,
+            interactions.postInteraction
+        ];
+        bytes memory allInteractionsConcat = bytes.concat(
+            interactions.makerAssetSuffix,
+            interactions.takerAssetSuffix,
+            interactions.makingAmountData,
+            interactions.takingAmountData,
+            interactions.predicate,
+            interactions.permit,
+            interactions.preInteraction,
+            interactions.postInteraction,
+            bytes("0x")
+        );
+
+        bytes32 offsets = 0;
+        uint256 sum = 0;
+        for (uint256 i = 0; i < allInteractions.length; i++) {
+            if (allInteractions[i].length > 0) {
+                sum += allInteractions[i].length;
+            }
+            offsets |= bytes32(sum << (i * 32));
+        }
+
+        bytes memory extension = "";
+        if (allInteractionsConcat.length > 0) {
+            extension = abi.encodePacked(offsets, allInteractionsConcat);
+        }
+
+        return extension;
+    }
+
+    function buildArgs(
+        bytes memory interaction,
+        bytes memory extension,
+        address target
+    ) public pure returns (bytes memory) {
+        bytes memory targetBytes = target != address(0)
+            ? abi.encodePacked(target)
+            : abi.encodePacked("");
+        bytes memory args = abi.encodePacked(
+            targetBytes,
+            extension,
+            interaction
+        );
+
+        return args;
     }
 }
