@@ -17,7 +17,7 @@ contract AddEmployee is Script {
             ANVIL_SECOND_ADDRESS,
             1e10,
             block.timestamp,
-            30 seconds
+            1 seconds
         );
         vm.stopBroadcast();
         console.log("We have the employee added");
