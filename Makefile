@@ -52,19 +52,34 @@ balanceOf-usdc-unlucky:
 	@cast call $(MAINNET_LINK_ADDRESS) "balanceOf(address)(uint256)" $(UNLUCKY_USER_USDC) 0
 
 balanceOf-link-default:
-	@cast call $(MAINNET_LINK_ADDRESS) "balanceOf(address)(uint256)" $(DEFAULT_USER) 0	
+	@cast call $(POLYGON_LINK_ADDRESS) "balanceOf(address)(uint256)" $(DEFAULT_USER) 0 --rpc-url $(ANVIL_RPC_URL_DST)
+
+balanceOf-link-second:
+	@cast call $(POLYGON_LINK_ADDRESS) "balanceOf(address)(uint256)" $(SECOND_USER) 0 --rpc-url $(ANVIL_RPC_URL_DST)
 
 balanceOf-usdc-default:
 	@cast call $(MAINNET_USDC_ADDRESS) "balanceOf(address)(uint256)" $(DEFAULT_USER) 0
 
 impersonate-link:
-	@cast rpc anvil_impersonateAccount $(UNLUCKY_USER_LINK)
+	@cast rpc anvil_impersonateAccount $(UNLUCKY_USER_LINK) --rpc-url $(ANVIL_RPC_URL_DST)
 
 impersonate-usdc:
 	@cast rpc anvil_impersonateAccount $(UNLUCKY_USER_USDC)
 
 send-link:
-	@cast send $(MAINNET_LINK_ADDRESS) --from $(UNLUCKY_USER_LINK) "transfer(address,uint256)(bool)" $(DEFAULT_USER) 1000000000000000000 --unlocked
+	@cast send $(POLYGON_LINK_ADDRESS) --from $(UNLUCKY_USER_LINK) "transfer(address,uint256)(bool)" $(DEFAULT_USER) 1000000000000000000000 --unlocked --rpc-url $(ANVIL_RPC_URL_DST)
 
 send-usdc:
 	@cast send $(MAINNET_USDC_ADDRESS) --from $(UNLUCKY_USER_USDC) "transfer(address,uint256)(bool)" $(DEFAULT_USER) 10000000000 --unlocked
+
+############################################################################################
+#                                         Demo											   #
+############################################################################################
+
+demo: makerToTaker takerToMaker
+
+makerToTaker:
+	@forge script script/1inch/mocks/Interactions.s.sol:MakerToTaker --rpc-url $(ANVIL_RPC_URL_SRC) --private-key $(SECOND_USER_PRIVATE_KEY) --broadcast -vvvv
+
+takerToMaker:
+	@forge script script/1inch/mocks/Interactions.s.sol:TakerToMaker --rpc-url $(ANVIL_RPC_URL_DST) --account default --sender $(DEFAULT_USER) --broadcast -vvvv
